@@ -53,7 +53,7 @@ export default function Sidebar({
         <div className="avatar">{user?.name ? user.name.substring(0, 2).toUpperCase() : 'ST'}</div>
         <div className="user-info">
           <h4>{user?.name || 'Student'}</h4>
-          <span className="status-badge">● Verified Profile</span>
+          <span className="status-badge">â— Verified Profile</span>
         </div>
       </div>
 
@@ -61,7 +61,7 @@ export default function Sidebar({
         <div className="sidebar-widget" style={{ marginBottom: '1rem' }}>
           <div className="widget-header-row">
             <span className="widget-title" style={{ fontSize: '0.75rem' }}>{examTitle}</span>
-            <button className="icon-btn" onClick={openTimingModal}>⚙️</button>
+            <button className="icon-btn" onClick={openTimingModal}>âš™ï¸</button>
           </div>
           <div className="countdown-display" style={{ fontSize: '1rem', marginTop: '0.25rem' }}>{countdownStr}</div>
         </div>
@@ -76,7 +76,7 @@ export default function Sidebar({
         ))}
       </nav>
 
-      {/* ── INTERACTIVE CHAT TUNNEL MANAGEMENT SYSTEM ── */}
+      {/* â”€â”€ INTERACTIVE CHAT TUNNEL MANAGEMENT SYSTEM â”€â”€ */}
       <div className="chat-history-hub" style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflowY: 'auto', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
           <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', color: 'var(--text-dim)', fontWeight: '700' }}>Conversations</span>
@@ -85,7 +85,7 @@ export default function Sidebar({
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onCreateNewChat(); }} 
             style={{ background: 'var(--accent)', border: 'none', color: 'white', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600', cursor: 'pointer' }}
           >
-            ➕ New Chat
+            âž• New Chat
           </button>
         </div>
         
@@ -119,7 +119,7 @@ export default function Sidebar({
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: '0.5rem'
                   }}
                 >
-                  💬 {sess.title}
+                  ðŸ’¬ {sess.title}
                 </span>
               )}
 
@@ -127,11 +127,11 @@ export default function Sidebar({
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                 {editingId !== sess.id && (
                   <button onClick={(e) => startInlineRename(sess, e)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.75rem' }} title="Rename Track">
-                    ✏️
+                    âœï¸
                   </button>
                 )}
                 <button onClick={(e) => { e.stopPropagation(); onDeleteSession(sess.id); }} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', fontSize: '0.75rem' }} title="Delete Track">
-                  🗑️
+                  ðŸ—‘ï¸
                 </button>
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function Sidebar({
           <input type="file" accept="application/pdf" className="hidden" onChange={handleFileUpload} />
         </label>
         <div className="uploaded-files-list">
-          {(uploadedFiles || []).map((file, i) => <div className="file-item" key={i}><span>📄 {file}</span></div>)}
+          {(uploadedFiles || []).map((file, i) => <div className="file-item" key={i}><span>ðŸ“„ {file}</span></div>)}
         </div>
       </div>
 

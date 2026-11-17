@@ -51,7 +51,7 @@ export default function App() {
   const messages = useLiveQuery(() => localDB.messages.orderBy('timestamp').toArray()) || [];
   const onlineStatus = useLiveQuery(() => navigator.onLine);
 
-  // ── Flashcards Subsystem ──
+  // â”€â”€ Flashcards Subsystem â”€â”€
   const [flashcards, setFlashcards] = useState(DEFAULT_FLASHCARDS);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -68,7 +68,7 @@ export default function App() {
     }, 150);
   }, [flashcards.length]);
 
-  // ── Exam Countdown Tracker & Editing Controls ──
+  // â”€â”€ Exam Countdown Tracker & Editing Controls â”€â”€
   const [examTitle, setExamTitle] = useState(() => localStorage.getItem('edupulse_exam_title') || 'Time to Finals');
   const [examTargetTime, setExamTargetTime] = useState(() => parseInt(localStorage.getItem('edupulse_exam_target_time')) || (Date.now() + 14 * 24 * 60 * 60 * 1000));
   const [countdownStr, setCountdownStr] = useState('');
@@ -76,7 +76,7 @@ export default function App() {
   const [modalExamTitle, setModalExamTitle] = useState('');
   const [modalDatetime, setModalDatetime] = useState('');
 
-  // ── Live Countdown Timer Calculation ──
+  // â”€â”€ Live Countdown Timer Calculation â”€â”€
   const updateCountdown = useCallback(() => {
     const delta = examTargetTime - Date.now();
     if (delta <= 0) { setCountdownStr('EXAM PERIOD ACTIVE'); return; }
@@ -115,7 +115,7 @@ export default function App() {
     setShowTimingModal(false);
   };
 
-  // ── Session Switcher & Supabase Integration ──
+  // â”€â”€ Session Switcher & Supabase Integration â”€â”€
   const switchActiveSession = async (sessionId) => {
     if (!sessionId) return;
     setActiveSessionId(sessionId);
@@ -237,7 +237,7 @@ export default function App() {
     }
   }, [user, loadUserSessions]);
 
-  // ── Mock Exam Generator ──
+  // â”€â”€ Mock Exam Generator â”€â”€
   const launchMockExam = async () => {
     setActiveTab('chat');
     if (!activeSessionId) {
@@ -249,7 +249,7 @@ export default function App() {
     
     await localDB.messages.add({
       role: 'user',
-      text: '📝 *Simulate Live Mock Exam*',
+      text: 'ðŸ“ *Simulate Live Mock Exam*',
       timestamp: Date.now(),
       synced: navigator.onLine ? 1 : 0
     });
@@ -258,7 +258,7 @@ export default function App() {
       await supabase.from('chat_messages').insert([{
         session_id: activeSessionId,
         role: 'user',
-        text: '📝 *Simulate Live Mock Exam*',
+        text: 'ðŸ“ *Simulate Live Mock Exam*',
         timestamp: Date.now()
       }]);
     } else {
@@ -266,7 +266,7 @@ export default function App() {
     }
 
     try {
-      const response = await fetch('https://edu-p-luse-backend-ai.vercel.app/api/auth/chat/', {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/chat/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -278,7 +278,7 @@ export default function App() {
       });
 
       const data = await response.json();
-      const aiResponse = response.ok ? data.response : `⚠️ Mock Exam Generation Failed.`;
+      const aiResponse = response.ok ? data.response : `âš ï¸ Mock Exam Generation Failed.`;
 
       await localDB.messages.add({
         role: 'assistant',
@@ -299,7 +299,7 @@ export default function App() {
       console.error('Mock exam error:', e);
       await localDB.messages.add({
         role: 'assistant',
-        text: '🚨 Server endpoint connection error while generating mock exam.',
+        text: 'ðŸš¨ Server endpoint connection error while generating mock exam.',
         timestamp: Date.now(),
         synced: 0
       });
@@ -321,7 +321,7 @@ export default function App() {
     }
 
     try {
-      const response = await fetch('https://edu-p-luse-backend-ai.vercel.app/api/auth/chat/', {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/chat/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -333,7 +333,7 @@ export default function App() {
       });
 
       const data = await response.json();
-      const aiResponse = response.ok ? data.response : `⚠️ Pipeline Error processing input configurations.`;
+      const aiResponse = response.ok ? data.response : `âš ï¸ Pipeline Error processing input configurations.`;
 
       await localDB.messages.add({ role: 'assistant', text: aiResponse, timestamp: Date.now(), synced: 1 });
       await supabase.from('chat_messages').insert([{ session_id: activeSessionId, role: 'assistant', text: aiResponse, timestamp: Date.now() }]);
@@ -344,7 +344,7 @@ export default function App() {
         await handleRenameSession(activeSessionId, cleanTitle);
       }
     } catch {
-      await localDB.messages.add({ role: 'assistant', text: '🚨 Server endpoint sync anomaly recorded.', timestamp: Date.now(), synced: 0 });
+      await localDB.messages.add({ role: 'assistant', text: 'ðŸš¨ Server endpoint sync anomaly recorded.', timestamp: Date.now(), synced: 0 });
     }
   };
 
@@ -400,7 +400,7 @@ export default function App() {
         </main>
       </div>
 
-      {/* ── Exam Target Date & Time Configuration Modal ── */}
+      {/* â”€â”€ Exam Target Date & Time Configuration Modal â”€â”€ */}
       {showTimingModal && (
         <div className="modal-overlay">
           <div className="modal-card" style={{ maxWidth: '420px', padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>

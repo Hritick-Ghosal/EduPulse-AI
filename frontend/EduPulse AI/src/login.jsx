@@ -106,7 +106,7 @@ export default function Login({ onAuthSuccess }) {
 
     if (authMode === 'login') {
       try {
-        const response = await fetch('https://edu-p-luse-backend-ai.vercel.app/api/auth/login/', {
+        const response = await fetch('http://127.0.0.1:8000/api/auth/login/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -122,7 +122,7 @@ export default function Login({ onAuthSuccess }) {
       }
     } else if (authMode === 'register') {
       try {
-        const response = await fetch('https://edu-p-luse-backend-ai.vercel.app/api/auth/register/', {
+        const response = await fetch('http://127.0.0.1:8000/api/auth/register/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password, course: degree })
@@ -139,14 +139,14 @@ export default function Login({ onAuthSuccess }) {
       }
     } else if (authMode === 'forgot') {
       try {
-        const response = await fetch('https://edu-p-luse-backend-ai.vercel.app/api/auth/forgot-password/', {
+        const response = await fetch('http://127.0.0.1:8000/api/auth/forgot-password/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email })
         });
         const data = await response.json();
         if (response.ok) {
-          alert(`🔒 Password reset tunnel provisioned! If an active profile exists for "${email}", a reset sequence has been dispatched.`);
+          alert(`ðŸ”’ Password reset tunnel provisioned! If an active profile exists for "${email}", a reset sequence has been dispatched.`);
           setAuthMode('login');
         } else {
           alert(data.error || 'Failed processing request parameters.');
@@ -191,7 +191,7 @@ export default function Login({ onAuthSuccess }) {
           {authMode !== 'forgot' && (
             <div className="input-group">
               <label><KeyRound size={12} style={{ marginRight: '4px' }} /> Account Password</label>
-              <input type="password" required placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+              <input type="password" required placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" value={password} onChange={e => setPassword(e.target.value)} />
             </div>
           )}
 
@@ -239,7 +239,7 @@ export default function Login({ onAuthSuccess }) {
             />
             {captchaError && (
               <span style={{ fontSize: '0.72rem', color: 'var(--danger)', marginTop: '4px', display: 'block' }}>
-                ⚠️ Security verification mismatch. Code replaced.
+                âš ï¸ Security verification mismatch. Code replaced.
               </span>
             )}
           </div>

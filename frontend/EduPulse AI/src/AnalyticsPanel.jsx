@@ -4,7 +4,7 @@ import { localDB } from './db';
 import { AlertTriangle, CheckCircle2, BookOpen, Clock, Trash2 } from 'lucide-react';
 
 export default function AnalyticsPanel({ setSidebarOpen }) {
-  // ── Real-Time Aggregate Data Queries ──
+  // â”€â”€ Real-Time Aggregate Data Queries â”€â”€
   const quizzes = useLiveQuery(() => localDB.quizzes.orderBy('timestamp').reverse().toArray()) || [];
 
   const totalAttempts = quizzes.length;
@@ -104,7 +104,7 @@ export default function AnalyticsPanel({ setSidebarOpen }) {
               {sortedTopics.map((topicNode, idx) => (
                 <div className="tracker-item" key={idx} style={{ marginBottom: 0 }}>
                   <div className="tracker-meta" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '0.4rem' }}>
-                    <span style={{ fontWeight: '500' }}>📚 {topicNode.topic}</span>
+                    <span style={{ fontWeight: '500' }}>ðŸ“š {topicNode.topic}</span>
                     <span style={{ color: topicNode.percentage >= 70 ? 'var(--success)' : 'var(--warning)', fontWeight: '600' }}>
                       {topicNode.percentage}% Accuracy ({topicNode.correct}/{topicNode.total})
                     </span>

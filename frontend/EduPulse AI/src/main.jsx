@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './index.jsx'
 import './assets/styles.css'
 
-// ─── Service Worker Registration for Offline Capabilities ───
+// â”€â”€â”€ Service Worker Registration for Offline Capabilities â”€â”€â”€
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')

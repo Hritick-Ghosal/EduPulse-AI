@@ -21,3 +21,16 @@ build/
 .DS_Store
 .vscode/
 .idea/
+.env
+backend/.env
+.venv/
+node_modules/
+**/node_modules/
+__pycache__/
+
+.env
+backend/.env
+.venv/
+node_modules/
+**/node_modules/
+__pycache__/

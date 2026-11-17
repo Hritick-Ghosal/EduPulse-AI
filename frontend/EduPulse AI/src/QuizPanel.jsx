@@ -35,7 +35,7 @@ export default function QuizPanel({ setSidebarOpen, user, uploadedFiles }) {
   const handleStartQuiz = async () => {
     setQuizState('loading');
     try {
-      const response = await fetch('https://edu-p-luse-backend-ai.vercel.app/api/auth/generate-quiz/', {
+      const response = await fetch('http://127.0.0.1:8000/api/auth/generate-quiz/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -173,7 +173,7 @@ export default function QuizPanel({ setSidebarOpen, user, uploadedFiles }) {
             <span className="badge badge-warning" style={{ backgroundColor: 'var(--bg-primary)' }}>Topic: {currentQ.topic}</span>
           </div>
           <div className="countdown-display" style={{ fontSize: '1.5rem', color: timeLeft < 10 ? 'var(--danger)' : 'var(--warning)' }}>
-            ⏱️ {timeLeft}s Left
+            â±ï¸ {timeLeft}s Left
           </div>
         </header>
 
@@ -195,7 +195,7 @@ export default function QuizPanel({ setSidebarOpen, user, uploadedFiles }) {
           </div>
           <button className="btn btn-primary" onClick={() => handleNextSubmission(false)} disabled={!selectedAnswer}
             style={{ marginTop: '2rem', alignSelf: 'flex-end', marginLeft: 'auto', display: 'block' }}>
-            {currentIndex + 1 === quizData.length ? 'Finish Evaluation' : 'Submit & Next Question →'}
+            {currentIndex + 1 === quizData.length ? 'Finish Evaluation' : 'Submit & Next Question â†’'}
           </button>
         </div>
       </div>
@@ -221,7 +221,7 @@ export default function QuizPanel({ setSidebarOpen, user, uploadedFiles }) {
           <div className="card status-card blue">
             <h3>AI Focus Recommendation</h3>
             {wrongTopics.length === 0 ? (
-              <p style={{ color: 'var(--success)', marginTop: '1rem', fontWeight: '600' }}>🎖️ Perfect structural mastery verified across all items!</p>
+              <p style={{ color: 'var(--success)', marginTop: '1rem', fontWeight: '600' }}>ðŸŽ–ï¸ Perfect structural mastery verified across all items!</p>
             ) : (
               <div style={{ marginTop: '0.5rem' }}>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Target these specific modules in chat:</p>
