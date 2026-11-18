@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,7 +25,7 @@ SECRET_KEY = 'django-insecure-7pv=jz^6yw6dg-3ddn@7!%a-c!w_8g6t+n)ui&g=vta4^99r3&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', 'backend']
 
 
 # Application definition
@@ -119,9 +120,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 # Cross-Origin Security Sandbox Overrides
-CORS_ALLOWED_ORIGINS = [
+_env_cors = os.getenv("CORS_ALLOWED_ORIGINS", "")
+CORS_ALLOWED_ORIGINS = list(dict.fromkeys([
     "https://edu-p-luse-frontend-ai-k2r9.vercel.app",
     "http://localhost:5173",
     "http://localhost:5174",
-    
-]
+    "http://localhost",
+    "http://127.0.0.1",
+] + [origin.strip() for origin in _env_cors.split(",") if origin.strip()]))

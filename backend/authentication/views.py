@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import bcrypt
 from django.http import JsonResponse
@@ -117,13 +117,13 @@ def forgot_password_view(request):
         student = students_collection.find_one({"email": email})
         if not student:
             return JsonResponse({
-                "message": "🔒 If a matching operational profile exists, password reset sequences have been logged."
+                "message": "ðŸ”’ If a matching operational profile exists, password reset sequences have been logged."
             }, status=200)
 
-        print(f"🔗 [Reset System Hook] Secure token generation initialized for profile: {email}")
+        print(f"ðŸ”— [Reset System Hook] Secure token generation initialized for profile: {email}")
 
         return JsonResponse({
-            "message": "🔒 Password reset credentials logged. Verification links generated safely."
+            "message": "ðŸ”’ Password reset credentials logged. Verification links generated safely."
         }, status=200)
 
     except json.JSONDecodeError:
@@ -134,7 +134,7 @@ def forgot_password_view(request):
 
 @csrf_exempt
 def chat_with_tutor(request):
-    """Routes active student query inputs to Groq Cloud API using Llama-3.3-70b-versatile."""
+    """Routes active student query inputs to Groq Cloud API using openai/gpt-oss-120b."""
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed"}, status=405)
     
@@ -168,7 +168,7 @@ def chat_with_tutor(request):
 
         chat_completion = groq_client.chat.completions.create(
             messages=llm_messages,
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             temperature=0.3, 
             max_completion_tokens=1024
         )
@@ -182,7 +182,7 @@ def chat_with_tutor(request):
 
 @csrf_exempt
 def generate_custom_quiz(request):
-    """Ingests user preferences and extracts a strict JSON formatted quiz from Groq using Llama-3.3-70b-versatile."""
+    """Ingests user preferences and extracts a strict JSON formatted quiz from Groq using openai/gpt-oss-120b."""
     if request.method != 'POST':
         return JsonResponse({"error": "Method not allowed"}, status=405)
         
@@ -226,7 +226,7 @@ def generate_custom_quiz(request):
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_prompt}
             ],
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-120b",
             temperature=0.2, 
             response_format={"type": "json_object"}
         )
