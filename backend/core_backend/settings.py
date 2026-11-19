@@ -29,7 +29,6 @@ ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', 'backend']
 
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -37,10 +36,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'corsheaders',
-    'authentication',
-]
 
+    'corsheaders',
+
+    'authentication',
+    'academics',
+]
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # MUST sit at the absolute top boundary
     'django.middleware.security.SecurityMiddleware',
