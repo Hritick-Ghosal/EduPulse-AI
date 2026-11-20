@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import bcrypt
 from django.http import JsonResponse
@@ -10,11 +10,39 @@ from .db_config import get_mongo_collection
 # Explicitly load environment variables from .env before initializing SDKs
 load_dotenv()
 
-# Fetch the students collection tracking reference pointer from MongoDB Atlas
-students_collection = get_mongo_collection('students')
+class _LazyCollection:
+    """Proxy object that defers MongoDB connection until an operation is called."""
+    def __init__(self, name):
+        self._name = name
+        self._col = None
 
-# Initialize the Groq SDK Engine client mapping using environment credentials
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    def _get_col(self):
+        if self._col is None:
+            self._col = get_mongo_collection(self._name)
+        return self._col
+
+    def __getattr__(self, item):
+        return getattr(self._get_col(), item)
+
+
+class _LazyGroq:
+    """Proxy object that defers Groq SDK initialization until first use."""
+    def __init__(self):
+        self._client = None
+
+    def _get_client(self):
+        if self._client is None:
+            api_key = os.getenv("GROQ_API_KEY")
+            self._client = Groq(api_key=api_key)
+        return self._client
+
+    def __getattr__(self, item):
+        return getattr(self._get_client(), item)
+
+
+# Lazy instances that preserve the exact same interface without crashing server startup
+students_collection = _LazyCollection('students')
+groq_client = _LazyGroq()
 
 
 @csrf_exempt

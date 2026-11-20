@@ -1,0 +1,224 @@
+====================================================================================================
+EDUPULSE AI — COMPLETE REPOSITORY STRUCTURE & FILE USAGE GUIDE
+====================================================================================================
+Repository Root: EduPulse-AI/
+Architecture: Decoupled 3-Service Architecture (Unified Django Backend + Dual Independent Frontends)
+====================================================================================================
+
+EduPulse-AI/
+│
+├── .env                                # [CONFIGURATION] Central unified environment file containing all credentials
+│                                       # (MongoDB Atlas user/password/cluster, Groq API key, CORS origins, VITE_ vars).
+├── .env.example                        # [TEMPLATE] Example environment template for git clones and local setup.
+├── .gitignore                          # [VERSION CONTROL] Root git ignore rules (node_modules, venv, secrets, logs).
+├── docker-compose.yml                  # [ORCHESTRATION] Defines and coordinates the 3 Docker services (backend on 8000,
+│                                       # student frontend on 80, teacher portal on 8080) on a shared bridge network.
+├── requirements.txt                    # [DEPENDENCIES] Root Python dependencies manifest (Django, ML, Gunicorn, DB drivers).
+├── run_docker.bat                      # [DEV EXECUTION] Windows double-click batch script to launch the full Docker stack.
+├── run_docker.ps1                      # [DEV EXECUTION] PowerShell script to build and launch the Docker stack with status output.
+├── stop_docker.bat                     # [DEV EXECUTION] Windows batch script to gracefully stop and remove active containers.
+├── PROJECT_REPORT.md                   # [DOCUMENTATION] Comprehensive technical, architectural, and mathematical system report
+│                                       # (formulas, model weights, OLS proofs, and analytical calculations).
+├── CHAT_HISTORY.md                     # [DOCUMENTATION] Full chronological prompt-by-prompt development and execution transcript.
+├── ProjectStructure.txt                # [DOCUMENTATION] Complete inventory of all files, folders, and their usage.
+├── FIRST_TIME_SETUP.md                 # [DOCUMENTATION] Comprehensive first-time setup guide for new laptops (Docker & local).
+├── README.md                           # [DOCUMENTATION] High-level project summary, quick-start guide, and feature highlights.
+│
+├── data/
+│   └── StudentsPerformance.csv         # [DATASET] Benchmark dataset containing 1,000 student demographic records and
+│                                       # standardized scores (math, reading, writing) used for model training and validation.
+│
+├── notebooks/
+│   ├── 01_eda.ipynb                    # [JUPYTER] Exploratory Data Analysis notebook (demographic distributions, score
+│   │                                   # correlations, feature impact analysis, and visualization plots).
+│   └── 02_modeling.ipynb               # [JUPYTER] Model experimentation notebook (evaluates Regressors, trains the
+│                                       # Scikit-Learn ColumnTransformer pipeline, and exports student_math_pipeline.joblib).
+│
+├── backend/                            # [SERVICE: BACKEND] Unified Django 5.2 REST & ML API service running on port 8000.
+│   ├── .dockerignore                   # Docker build exclusions for backend (excludes db.sqlite3, cache, git).
+│   ├── .env.example                    # Local environment reference template for standalone backend setup.
+│   ├── Dockerfile                      # Python 3.11-slim container specification; installs gcc, builds dependencies,
+│   │                                   # and delegates startup execution to entrypoint.sh.
+│   ├── entrypoint.sh                   # Container entrypoint script: automatically executes migrations, collects static
+│   │                                   # assets, seeds default 'teacher1' ('Teacher@123') account, and boots Gunicorn.
+│   ├── manage.py                       # Django command-line utility for administrative tasks, migrations, and shell.
+│   ├── requirements.txt                # Python package requirements for backend Docker image (scikit-learn, Django, etc.).
+│   ├── run_server.bat                  # Standalone Windows batch script to launch Django development server locally.
+│   ├── run_server.ps1                  # Standalone PowerShell script to launch Django development server using virtualenv.
+│   ├── vercel.json                     # Serverless deployment configuration for Vercel WSGI routing.
+│   ├── db.sqlite3                      # Local SQLite relational database (stores Student, Record, Prediction models).
+│   │
+│   ├── academics/                      # [DJANGO APP] Core academic management, ML inference, and analytics.
+│   │   ├── __init__.py                 # Python package marker.
+│   │   ├── admin.py                    # Django admin interface registrations for Student, AcademicRecord, Prediction,
+│   │   │                               # TeacherActivity, TeacherSession, and TeacherProfile.
+│   │   ├── apps.py                     # Academics application configuration class.
+│   │   ├── models.py                   # Relational ORM models:
+│   │   │                               # • TeacherProfile: Extended profile for teachers (department, phone).
+│   │   │                               # • Student: Core demographic identity (student_id, name, class, gender, race).
+│   │   │                               # • AcademicRecord: Evaluated test scores (math, reading, writing) & metadata.
+│   │   │                               # • Prediction: ML model output (predicted math, support tier, input json).
+│   │   │                               # • TeacherActivity: Audit log tracking teacher actions and uploads.
+│   │   │                               # • TeacherSession: Token-based authentication session storage with expiration.
+│   │   ├── tests.py                    # Unit tests placeholder for academics endpoints.
+│   │   ├── urls.py                     # URL routing for academics endpoints (/api/academics/):
+│   │   │                               # • / (api_root JSON directory)
+│   │   │                               # • teacher/login/ & teacher/logout/
+│   │   │                               # • students/ & students/<id>/
+│   │   │                               # • predict/ (ML math prediction)
+│   │   │                               # • upload-csv/ (Dynamic marksheet CSV ingestion)
+│   │   │                               # • analytics/ (Cohort metrics, upgrade gaps, student lists)
+│   │   ├── views.py                    # View controllers & business logic:
+│   │   │                               # • get_math_pipeline(): Lazy model loader for student_math_pipeline.joblib.
+│   │   │                               # • run_math_prediction(): Prepares DataFrame & runs Scikit-Learn inference.
+│   │   │                               # • upload_students_csv(): Dynamic 2-pass CSV parser with alias normalization,
+│   │   │                               #   auto-generated IDs/names, fallback defaults, and automated batch prediction.
+│   │   │                               # • class_analytics(): Returns composite averages, performance tiers, at-risk
+│   │   │                               #   students, full roster with upgrade paths, and demographic distributions.
+│   │   │                               # • student_list_create() & student_detail(): CRUD operations for student entities.
+│   │   └── migrations/                 # Database schema evolution scripts:
+│   │       ├── __init__.py             # Python package marker.
+│   │       ├── 0001_initial.py         # Initial migration creating Student, AcademicRecord, Prediction, TeacherProfile,
+│   │       │                           # TeacherActivity tables.
+│   │       └── 0002_prediction_support_category_student_race_ethnicity_and_more.py
+│   │                                   # Migration adding support categories, demographic fields, and TeacherSession model.
+│   │
+│   ├── authentication/                 # [DJANGO APP] Student authentication and Groq LLM study assistant endpoints.
+│   │   ├── __init__.py                 # Python package marker.
+│   │   ├── admin.py                    # Django admin interface marker for authentication.
+│   │   ├── apps.py                     # Authentication application configuration class.
+│   │   ├── db_config.py                # MongoDB Atlas connection manager; builds TLS/SSL connection string from .env.
+│   │   ├── models.py                   # Django ORM models placeholder (student auth uses MongoDB collection).
+│   │   ├── tests.py                    # Authentication tests placeholder.
+│   │   ├── urls.py                     # URL routing for student auth endpoints (/api/auth/):
+│   │   │                               # • register/, login/, profile/, groq-chat/
+│   │   ├── views.py                    # Controllers for student registration, bcrypt password verification, MongoDB
+│   │   │                               # session persistence, and GroqCloud LLM conversational completion streaming.
+│   │   └── migrations/                 # Migrations marker for authentication app.
+│   │       └── __init__.py             # Python package marker.
+│   │
+│   ├── core_backend/                   # [DJANGO ROOT] Main project configuration.
+│   │   ├── __init__.py                 # Python package marker.
+│   │   ├── asgi.py                     # ASGI application entrypoint for async server environments.
+│   │   ├── settings.py                 # Core configuration: Root .env loader, SQLite DATABASES, CORS_ALLOWED_ORIGINS
+│   │   │                               # (ports 80, 5173, 5174, 8080), STATIC_ROOT, and installed apps.
+│   │   ├── urls.py                     # Top-level URL dispatcher delegating to academics/ and authentication/ routes.
+│   │   └── wsgi.py                     # WSGI entrypoint consumed by Gunicorn for production HTTP serving.
+│   │
+│   └── ml_models/                      # [MACHINE LEARNING ASSETS]
+│       └── student_math_pipeline.joblib# Serialized Scikit-Learn Pipeline containing:
+│                                       # 1. ColumnTransformer:
+│                                       #    • OneHotEncoder for 5 categorical attributes (17 binary basis dimensions).
+│                                       #    • StandardScaler for reading/writing scores (mean: 69.56, 68.46; std: 14.45, 15.08).
+│                                       # 2. LinearRegression regressor:
+│                                       #    • Intercept: 65.905970; exact weights on literacy and demographic features.
+│
+└── frontend/                           # [FRONTEND LAYER] Houses both student and teacher web applications.
+    │
+    ├── EduPulse AI/                    # [SERVICE: STUDENT APP] Student AI Study Assistant web application (Port 80 / 5173).
+    │   ├── .dockerignore               # Docker build exclusions for student frontend.
+    │   ├── .gitignore                  # Git ignore rules for node_modules and dist artifacts.
+    │   ├── Dockerfile                  # Multi-stage Dockerfile: Node 20-alpine builder compiles Vite assets,
+    │   │                               # Nginx-alpine serves static distribution on port 80.
+    │   ├── eslint.config.js            # ESLint static code analysis configuration.
+    │   ├── index.html                  # HTML5 entrypoint document with viewport metadata and font declarations.
+    │   ├── nginx.conf                  # Nginx configuration for SPA routing fallback (try_files) and reverse proxying.
+    │   ├── package.json                # NPM package definition (React 19, Dexie IndexedDB, Lucide, Supabase, Vite).
+    │   ├── package-lock.json           # Exact resolved dependency tree for reproducible student app builds.
+    │   ├── README.md                   # Documentation for student assistant web app.
+    │   ├── vercel.json                 # Vercel deployment routing configuration for student frontend.
+    │   ├── vite.config.js              # Vite configuration; locked to port 5173, envDir pointing to root .env ('../../').
+    │   │
+    │   ├── public/                     # Static assets served directly by web server:
+    │   │   ├── favicon.svg             # Application browser tab icon.
+    │   │   ├── icons.svg               # SVG sprite definitions for UI badges.
+    │   │   └── sw.js                   # Service Worker script enabling offline caching of study materials.
+    │   │
+    │   └── src/                        # React source code:
+    │       ├── AnalyticsPanel.jsx      # Student-facing learning progress dashboard and mastery visualizer.
+    │       ├── App.css                 # Component-specific styles and utility classes.
+    │       ├── App.jsx                 # Top-level shell rendering navigation tabs and active sub-panels.
+    │       ├── ChatPanel.jsx           # AI Study Assistant chat interface; connects to GroqCloud LLM via backend API.
+    │       ├── FlashcardsPanel.jsx     # Interactive spaced-repetition flashcards for quick revision.
+    │       ├── QuizPanel.jsx           # Self-assessment quiz generator testing student subject comprehension.
+    │       ├── Sidebar.jsx             # Left navigation drawer for switching between study assistant panels.
+    │       ├── db.js                   # Dexie.js offline-first IndexedDB schema definition for local notes storage.
+    │       ├── index.jsx               # WorkspaceRoot component coordinating active views and layout.
+    │       ├── login.jsx               # Student authentication interface (login/registration with MongoDB backend).
+    │       ├── main.jsx                # Application root mounting WorkspaceRoot into document DOM (#root).
+    │       ├── supabaseClient.js       # Client configuration helper for cloud synchronization.
+    │       └── assets/
+    │           └── styles.css          # Comprehensive design system stylesheet for the student assistant workspace.
+    │
+    └── teachers-portal/                # [SERVICE: TEACHER PORTAL] Academic Monitoring & Decision Support Portal (Port 8080 / 5174).
+        ├── .dockerignore               # Docker build exclusions (node_modules, dist, local env files).
+        ├── .env.example                # Example environment file documenting VITE_API_BASE_URL.
+        ├── .gitignore                  # Git ignore rules for teacher portal dependencies and build artifacts.
+        ├── .oxlintrc.json              # Oxlint high-speed linter rule configuration.
+        ├── Dockerfile                  # Multi-stage Dockerfile: Node 20-alpine builder compiles Vite production bundle,
+        │                               # Nginx-alpine serves static distribution on container port 80 (mapped to 8080).
+        ├── index.html                  # HTML5 entrypoint document mounting #root container.
+        ├── nginx.conf                  # Nginx web server configuration with React Router SPA fallback and API proxying.
+        ├── package.json                # NPM package definition (React 19, Lucide React icons, Oxlint, Vite 8).
+        ├── package-lock.json           # Exact resolved dependency tree for reproducible teacher portal builds.
+        ├── README.md                   # Documentation guide for Teacher Portal architecture.
+        ├── vite.config.js              # Vite configuration; locked to port 5174, envDir pointing to root .env ('../../').
+        │
+        ├── public/                     # Public static assets:
+        │   ├── favicon.svg             # Teacher portal browser tab icon.
+        │   └── icons.svg               # SVG icons sheet for portal widgets.
+        │
+        └── src/                        # React source code:
+            ├── App.jsx                 # Main authenticated layout shell; orchestrates top tabs, loads analytics/students
+            │                           # from backend, and passes data to DashboardPage, StudentsPage, and PredictorPage.
+            ├── index.css               # Design system styling: responsive grids, badges, cards, chart containers,
+            │                           # filter bars, upgrade indicators, and animations.
+            ├── main.jsx                # React root entrypoint wrapping App with AuthProvider and mounting to DOM.
+            │
+            ├── api/
+            │   └── client.js           # Centralized API fetch client; handles base URLs, attaches 'Authorization: Token',
+            │                           # intercepts 401 unauthorized errors, and provides typed methods (login,
+            │                           # getAnalytics, getStudents, createStudent, deleteStudent, predictMathScore, uploadCsv).
+            │
+            ├── assets/
+            │   ├── hero.png            # Visual graphic illustration used on login screen.
+            │   ├── react.svg           # React framework logo asset.
+            │   └── vite.svg            # Vite bundler logo asset.
+            │
+            ├── components/             # Modular UI components:
+            │   ├── ActivityLog.jsx     # Chronological audit log card displaying recent teacher actions and uploads.
+            │   ├── AtRiskTable.jsx     # Filtered priority review table highlighting students with composite average < 60.
+            │   ├── Charts.jsx          # Pure inline SVG charting engine (Zero external library dependencies):
+            │   │                       # • SimplePieChart: Trigonometric arc generation for performance tiers.
+            │   │                       # • SimpleBarChart: Proportional horizontal SVG bars for subject means.
+            │   │                       # • SimpleDonutChart: Dual-radius concentric SVG paths for gender demographics.
+            │   ├── EthicsBanner.jsx    # Mandatory AI ethics compliance banner reminding teachers that ML is advisory.
+            │   ├── KpiCards.jsx        # Summary KPI cards row (Total Students, Mean Math, Mean Reading, Mean Writing).
+            │   ├── Navbar.jsx          # Top portal header with teacher name, direct link to Student App, and Logout button.
+            │   └── PerformanceBands.jsx# Visual progress bars detailing student distribution across the 4 support categories.
+            │
+            ├── context/                # Authentication state management:
+            │   ├── authContextDef.js   # React Context object definition for AuthContext.
+            │   ├── AuthContext.jsx     # Context Provider managing teacher_token and teacher_info in localStorage,
+            │   │                       # providing login/logout state and listening for unauthorized session expiry events.
+            │   └── useAuth.js          # Custom React hook providing clean access to authentication context.
+            │
+            └── pages/                  # Top-level view pages:
+                ├── LoginPage.jsx       # Teacher authentication screen; validates credentials ('teacher1' / 'Teacher@123')
+                │                       # against Django backend token auth endpoint.
+                ├── DashboardPage.jsx   # Core interactive academic intelligence cockpit:
+                │                       # • Dynamic SVG charts that recompute in real-time when students are selected.
+                │                       # • Single student focus card comparing individual scores against class benchmarks.
+                │                       # • Academic Upgrade Section calculating score gaps to next tier and suggested actions.
+                │                       # • Multi-mode student roster (All Students, Upgrade Candidates, At-Risk Only).
+                ├── PredictorPage.jsx   # Interactive Scikit-Learn simulation playground; lets teachers input features,
+                │                       # forecast math achievement, classify support tiers, and link predictions to students.
+                ├── StudentsPage.jsx    # Complete student directory; displays full score matrix, collapsible student
+                │                       # registration form, multi-field filters (class, tier, search), and record deletion.
+                └── CsvUploadPage.jsx   # Resilient bulk CSV marksheet ingestion:
+                                        # • Drag-and-drop file upload with sample CSV template downloads.
+                                        # • Dynamic column alias detection (works with standard or non-standard datasets).
+                                        # • Detailed import report with auto-mapped headers, created/updated counts, and errors.
+====================================================================================================
+END OF PROJECT STRUCTURE & FILE USAGE GUIDE
+====================================================================================================

@@ -1,0 +1,14 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+.env
+.env.local
+db.sqlite3
+staticfiles
+.git
+.gitignore
+run_server.bat
+run_server.ps1

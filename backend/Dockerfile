@@ -7,15 +7,23 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install dependencies first (leverages Docker layer caching)
+# Install system dependencies (needed for some Python packages)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies first (leverages Docker layer caching)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source code
 COPY . .
 
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
+
 # Expose Django REST port
 EXPOSE 8000
 
-# Start WSGI server for production
-CMD ["gunicorn", "core_backend.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Run migrations, seed data, then start Gunicorn via entrypoint
+ENTRYPOINT ["sh", "entrypoint.sh"]

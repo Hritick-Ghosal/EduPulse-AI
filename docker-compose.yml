@@ -1,23 +1,55 @@
-version: '3.8'
-
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: edupulse_backend
     restart: always
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - path: ./.env
+        required: false
+      - path: ./backend/.env
+        required: false
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:8080,http://127.0.0.1:8080,http://localhost:80,http://localhost,http://127.0.0.1
     networks:
       - edupulse_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/academics/teacher/login/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
 
   frontend:
-    build: ./frontend/EduPulse AI
+    build:
+      context: "./frontend/EduPulse AI"
+      dockerfile: Dockerfile
+      args:
+        VITE_GROQ_API_KEY: ${GROQ_API_KEY:-}
     container_name: edupulse_frontend
     restart: always
     ports:
       - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - edupulse_network
+
+  teacher-portal:
+    build:
+      context: ./frontend/teachers-portal
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/academics}
+        VITE_STUDENT_APP_URL: ${VITE_STUDENT_APP_URL:-http://localhost:5173}
+    container_name: edupulse_teacher_portal
+    restart: always
+    ports:
+      - "8080:80"
     depends_on:
       - backend
     networks:

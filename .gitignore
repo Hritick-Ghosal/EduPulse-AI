@@ -1,36 +1,215 @@
-# 🔒 Environment Secrets (CRITICAL)
+# ==============================================================================
+# 🛡️ EduPulse AI — Git Ignore & Security Policy
+# ==============================================================================
+# Ensures credentials, secrets, build artifacts, environments, databases,
+# and operating system junk are NEVER committed to GitHub.
+
+# ------------------------------------------------------------------------------
+# 1. 🔒 Environment Variables, Secrets & API Keys (CRITICAL SECURITY)
+# ------------------------------------------------------------------------------
 .env
-*.env
 .env.*
+*.env
+**/.env
+**/.env.*
+**/*.env
+!*.env.example
+!**/*.env.example
+!.env.template
+!**/*.env.template
 
-# Python / Django
-venv/
-__pycache__/
-*.py[cod]
+# Secret & Certificate Files
+*.pem
+*.key
+*.crt
+*.cert
+*.pfx
+*.p12
+*.id_rsa
+id_rsa*
+id_ed25519*
+*.pub
+
+# Cloud & Service Credentials
+credentials.json
+client_secret*.json
+service_account*.json
+google-credentials*.json
+*secret*.json
+*token*.json
+auth_token*
+*.token
+
+# ------------------------------------------------------------------------------
+# 2. 🗄️ Databases, Backups & Runtime State
+# ------------------------------------------------------------------------------
+*.sqlite3
+*.sqlite3-journal
+*.sqlite
+*.db
 db.sqlite3
-.pytest_cache/
+backend/db.sqlite3
+**/db.sqlite3
+*.sql
+*.dump
+*.rdb
+*.backup
+*.bak
 
-# Node / React
-node_modules/
-dist/
+# ------------------------------------------------------------------------------
+# 3. 🐍 Python Runtime, Caching & Virtual Environments
+# ------------------------------------------------------------------------------
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+**/.venv/
+**/venv/
+**/env/
+
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / Packaging
 build/
-.npm
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Unit Testing & Type Checking
+.pytest_cache/
+**/.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ------------------------------------------------------------------------------
+# 4. ⚛️ Node.js, Vite & Frontend Artifacts
+# ------------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Frontend Builds
+dist/
+dist-ssr/
+**/dist/
+**/dist-ssr/
+build/
+**/build/
+.output/
+
+# Vite / Frontend Cache
+.vite/
+**/.vite/
+.turbo/
+.next/
+.nuxt/
+*.local
+
+# ------------------------------------------------------------------------------
+# 5. 📓 Jupyter Notebooks Checkpoints
+# ------------------------------------------------------------------------------
+.ipynb_checkpoints
+**/.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+# ------------------------------------------------------------------------------
+# 6. 📝 Application & Server Logs
+# ------------------------------------------------------------------------------
+logs/
+**/logs/
 *.log
+*.log.*
+celerybeat-schedule
+celerybeat.pid
 
-# OS & IDE Junk
+# ------------------------------------------------------------------------------
+# 7. 💻 Operating System Artifacts
+# ------------------------------------------------------------------------------
+# macOS
 .DS_Store
-.vscode/
-.idea/
-.env
-backend/.env
-.venv/
-node_modules/
-**/node_modules/
-__pycache__/
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
 
-.env
-backend/.env
-.venv/
-node_modules/
-**/node_modules/
-__pycache__/
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ------------------------------------------------------------------------------
+# 8. 🛠️ IDE, Editor & Workspace Configurations
+# ------------------------------------------------------------------------------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*.sw?
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# ------------------------------------------------------------------------------
+# 9. 🐳 Docker & Container Local Caches
+# ------------------------------------------------------------------------------
+.docker/
+docker-compose.override.yml

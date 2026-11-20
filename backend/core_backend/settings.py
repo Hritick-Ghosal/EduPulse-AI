@@ -12,9 +12,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = BASE_DIR.parent
+env_file = ROOT_DIR / '.env' if (ROOT_DIR / '.env').exists() else (BASE_DIR / '.env')
+if env_file.exists():
+    load_dotenv(dotenv_path=env_file)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -25,7 +30,7 @@ SECRET_KEY = 'django-insecure-7pv=jz^6yw6dg-3ddn@7!%a-c!w_8g6t+n)ui&g=vta4^99r3&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.vercel.app', 'localhost', '127.0.0.1', 'backend']
+ALLOWED_HOSTS = ['*'] if DEBUG else ['.vercel.app', 'localhost', '127.0.0.1', 'backend', 'testserver']
 
 
 # Application definition
@@ -119,13 +124,22 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Cross-Origin Security Sandbox Overrides
 _env_cors = os.getenv("CORS_ALLOWED_ORIGINS", "")
 CORS_ALLOWED_ORIGINS = list(dict.fromkeys([
     "https://edu-p-luse-frontend-ai-k2r9.vercel.app",
+    "http://localhost",
+    "http://localhost:80",
     "http://localhost:5173",
     "http://localhost:5174",
-    "http://localhost",
+    "http://localhost:8080",
     "http://127.0.0.1",
+    "http://127.0.0.1:80",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:8080",
 ] + [origin.strip() for origin in _env_cors.split(",") if origin.strip()]))

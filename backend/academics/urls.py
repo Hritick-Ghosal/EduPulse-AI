@@ -1,7 +1,26 @@
 from django.urls import path
+from django.http import JsonResponse
 from . import views
 
+
+def api_root(request):
+    return JsonResponse({
+        "service": "EduPulse AI — Academics API",
+        "status": "online",
+        "endpoints": {
+            "teacher_login":  "/api/academics/teacher/login/",
+            "teacher_logout": "/api/academics/teacher/logout/",
+            "students":       "/api/academics/students/",
+            "predict":        "/api/academics/predict/",
+            "upload_csv":     "/api/academics/upload-csv/",
+            "analytics":      "/api/academics/analytics/",
+        }
+    })
+
+
 urlpatterns = [
+    path("", api_root, name="api_root"),
+
     path("teacher/login/", views.teacher_login, name="teacher_login"),
     path("teacher/logout/", views.teacher_logout, name="teacher_logout"),
 

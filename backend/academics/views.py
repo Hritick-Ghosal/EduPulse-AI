@@ -9,7 +9,7 @@ import joblib
 import pandas as pd
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.db.models import Avg
+from django.db.models import Avg, Count
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -362,6 +362,121 @@ def predict_math_score(request):
         return JsonResponse({"error": str(exc)}, status=500)
 
 
+import re
+
+# ---------------------------------------------------------------------------
+# Column-mapping helpers for dynamic CSV upload
+# ---------------------------------------------------------------------------
+
+def _clean_header(h: str) -> str:
+    """Normalize header by lowercasing and stripping non-alphanumeric characters."""
+    return re.sub(r"[^a-z0-9]", "", str(h).strip().lower())
+
+# Canonical fields prioritized in matching order (specific multi-word fields first)
+_CANONICAL_FIELD_KEYWORDS = [
+    ("test_preparation", ["testpreparationcourse", "testpreparation", "testprep", "preparation", "prep"]),
+    ("parental_education", ["parentallevelofeducation", "parentaleducation", "parenteducation", "education"]),
+    ("race_ethnicity", ["raceethnicity", "ethnicity", "race", "socialgroup"]),
+    ("reading_score", ["readingscore", "reading", "read", "readscore", "verbalscore", "englishscore"]),
+    ("writing_score", ["writingscore", "writing", "write", "writescore", "essay", "languagescore"]),
+    ("math_score", ["mathscore", "math", "maths", "mathematics", "mathsscore", "quant", "quantscore"]),
+    ("student_id", ["studentid", "id", "roll", "rollno", "rollnumber", "enrollment", "regno", "registrationno"]),
+    ("name", ["studentname", "fullname", "firstname", "candidatename", "name"]),
+    ("class_name", ["classname", "class", "batch", "program", "grade", "standard", "dept", "department", "course"]),
+    ("email", ["email", "emailid", "mail", "emailaddress"]),
+    ("section", ["section", "sec", "div", "division", "groupsection"]),
+    ("gender", ["gender", "sex"]),
+    ("lunch", ["lunch", "lunchtype", "mealplan", "meal"]),
+]
+
+# Generic fallback score aliases if reading/writing aren't explicitly named
+_GENERIC_SCORE_KEYWORDS = ["score", "marks", "total", "percentage", "points", "grade"]
+
+
+def _build_column_map(csv_headers):
+    """Return (field_map, detected, unmapped, auto_generated).
+    * field_map      – dict[canonical_field] -> original CSV header string
+    * detected       – same mapping, for the JSON response
+    * unmapped       – list of CSV headers that did not match any field
+    * auto_generated – list of canonical fields that have no CSV column
+    """
+    clean_to_orig = {}
+    for h in csv_headers:
+        cleaned = _clean_header(h)
+        if cleaned:
+            clean_to_orig[cleaned] = h
+
+    field_map = {}
+    detected = {}
+    matched_cleaned = set()
+
+    # Pass 1: Exact normalized matches first
+    for canonical, keywords in _CANONICAL_FIELD_KEYWORDS:
+        for kw in keywords:
+            if kw in clean_to_orig and clean_to_orig[kw] not in field_map.values():
+                orig_header = clean_to_orig[kw]
+                field_map[canonical] = orig_header
+                detected[canonical] = orig_header
+                matched_cleaned.add(kw)
+                break
+
+    # Pass 2: Substring matches for remaining fields
+    for canonical, keywords in _CANONICAL_FIELD_KEYWORDS:
+        if canonical in field_map:
+            continue
+        for kw in keywords:
+            for cleaned, orig_header in clean_to_orig.items():
+                if cleaned not in matched_cleaned:
+                    # Avoid false positive matching of 'course' inside 'testpreparationcourse'
+                    if canonical == "class_name" and ("test" in cleaned or "prep" in cleaned):
+                        continue
+                    if len(kw) >= 4 and (kw in cleaned or cleaned in kw):
+                        field_map[canonical] = orig_header
+                        detected[canonical] = orig_header
+                        matched_cleaned.add(cleaned)
+                        break
+            if canonical in field_map:
+                break
+
+    # If reading or writing scores not detected, search for generic score columns
+    if "reading_score" not in field_map:
+        for gen_kw in _GENERIC_SCORE_KEYWORDS:
+            for cleaned, orig_header in clean_to_orig.items():
+                if cleaned not in matched_cleaned and gen_kw in cleaned:
+                    field_map["reading_score"] = orig_header
+                    detected["reading_score"] = f"{orig_header} (inferred)"
+                    matched_cleaned.add(cleaned)
+                    break
+            if "reading_score" in field_map:
+                break
+
+    if "writing_score" not in field_map:
+        for gen_kw in _GENERIC_SCORE_KEYWORDS:
+            for cleaned, orig_header in clean_to_orig.items():
+                if cleaned not in matched_cleaned and gen_kw in cleaned:
+                    field_map["writing_score"] = orig_header
+                    detected["writing_score"] = f"{orig_header} (inferred)"
+                    matched_cleaned.add(cleaned)
+                    break
+            if "writing_score" in field_map:
+                break
+
+    unmapped = [h for h in csv_headers if _clean_header(h) not in matched_cleaned]
+    auto_generated = [f for f in ["student_id", "name", "class_name", "reading_score", "writing_score"] if f not in field_map]
+
+    return field_map, detected, unmapped, auto_generated
+
+
+def _safe_int_score(value, default=0):
+    """Try to parse *value* as a numeric score; return *default* on failure."""
+    if value is None or str(value).strip() == "":
+        return default
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return default
+
+
 @csrf_exempt
 def upload_students_csv(request):
     teacher = get_teacher(request)
@@ -377,51 +492,82 @@ def upload_students_csv(request):
     try:
         decoded = csv_file.read().decode("utf-8-sig")
         reader = csv.DictReader(io.StringIO(decoded))
-        required_cols = {"student_id", "name", "class_name", "reading_score", "writing_score"}
-        if not reader.fieldnames or not required_cols.issubset({c.strip().lower() for c in reader.fieldnames}):
-            return JsonResponse({
-                "error": f"CSV must include columns: {', '.join(sorted(required_cols))}"
-            }, status=400)
+
+        if not reader.fieldnames:
+            return JsonResponse({"error": "CSV file is empty or has no headers"}, status=400)
+
+        # --- dynamic column mapping ---
+        field_map, detected_columns, unmapped_columns, auto_generated = _build_column_map(
+            reader.fieldnames
+        )
 
         created_count = 0
         updated_count = 0
         errors = []
 
         for idx, raw_row in enumerate(reader, start=2):
-            row = {k.strip().lower(): (v or "").strip() for k, v in raw_row.items() if k}
-            sid = row.get("student_id", "")
-            name = row.get("name", "")
-            class_name = row.get("class_name", "")
+            # Build a lookup by original header → value
+            row_by_header = {k: (v or "").strip() for k, v in raw_row.items() if k}
 
-            if not sid or not name or not class_name:
-                errors.append(f"Row {idx}: missing student_id, name, or class_name")
-                continue
+            # Helper: get a value using the canonical field name
+            def _val(field, default=""):
+                hdr = field_map.get(field)
+                if hdr is not None:
+                    v = row_by_header.get(hdr, "").strip()
+                    if v != "":
+                        return v
+                return default
 
-            try:
-                reading = int(float(row["reading_score"]))
-                writing = int(float(row["writing_score"]))
-                math_raw = row.get("math_score", "")
-                math_val = int(float(math_raw)) if math_raw != "" else None
-                for score in [s for s in (math_val, reading, writing) if s is not None]:
-                    if not (0 <= score <= 100):
-                        raise ValueError("Score out of 0-100 range")
-            except ValueError as ve:
-                errors.append(f"Row {idx} ({sid}): {ve}")
-                continue
+            # --- student_id ---
+            sid = _val("student_id", "")
+            if not sid:
+                sid = f"STU-{idx - 1:04d}"
 
-            gender = row.get("gender", "female").lower() or "female"
-            race = row.get("race_ethnicity", "group C") or "group C"
-            parental = row.get("parental_education", "some college").lower() or "some college"
-            lunch = row.get("lunch", "standard").lower() or "standard"
-            prep = row.get("test_preparation", "none").lower() or "none"
+            # --- name ---
+            name = _val("name", "")
+            if not name:
+                name = f"Student {idx - 1}"
+
+            # --- class_name ---
+            class_name = _val("class_name", "Unassigned")
+
+            # --- scores ---
+            reading_raw = _val("reading_score", "")
+            writing_raw = _val("writing_score", "")
+            math_raw = _val("math_score", "")
+            math_val = _safe_int_score(math_raw, None) if math_raw != "" else None
+
+            # If reading/writing omitted, gracefully fallback to math_val or 50
+            default_score = math_val if math_val is not None else 50
+            reading = _safe_int_score(reading_raw, default_score) if reading_raw != "" else default_score
+            writing = _safe_int_score(writing_raw, default_score) if writing_raw != "" else default_score
+
+            # Clamp scores 0-100 (lenient – don't reject the row)
+            for score in [s for s in (math_val, reading, writing) if s is not None]:
+                if not (0 <= score <= 100):
+                    errors.append(f"Row {idx} ({sid}): score out of 0-100 range, clamped")
+                    break
+            reading = max(0, min(100, reading))
+            writing = max(0, min(100, writing))
+            if math_val is not None:
+                math_val = max(0, min(100, math_val))
+
+            # --- other fields with defaults ---
+            gender = (_val("gender", "female").lower()) or "female"
+            race = _val("race_ethnicity", "group C") or "group C"
+            parental = (_val("parental_education", "some college").lower()) or "some college"
+            lunch = (_val("lunch", "standard").lower()) or "standard"
+            prep = (_val("test_preparation", "none").lower()) or "none"
+            email = _val("email", "")
+            section = _val("section", "")
 
             student, created = Student.objects.update_or_create(
                 student_id=sid,
                 defaults={
                     "name": name,
-                    "email": row.get("email", ""),
+                    "email": email,
                     "class_name": class_name,
-                    "section": row.get("section", ""),
+                    "section": section,
                     "gender": gender,
                     "race_ethnicity": race,
                 },
@@ -481,6 +627,9 @@ def upload_students_csv(request):
             "created": created_count,
             "updated": updated_count,
             "errors": errors,
+            "detected_columns": detected_columns,
+            "unmapped_columns": unmapped_columns,
+            "auto_generated": auto_generated,
         })
     except Exception as exc:
         return JsonResponse({"error": f"Failed to parse CSV: {exc}"}, status=400)
@@ -506,37 +655,110 @@ def class_analytics(request):
         "Strong Performance": 0,
     }
     at_risk_students = []
+    all_students = []
 
     for student in Student.objects.all().order_by("student_id"):
         latest_rec = student.academic_records.order_by("-created_at").first()
         latest_pred = student.predictions.order_by("-created_at").first()
-        if not latest_rec and not latest_pred:
-            continue
 
-        reading = latest_rec.reading_score if latest_rec else latest_pred.input_data.get("reading_score", 0)
-        writing = latest_rec.writing_score if latest_rec else latest_pred.input_data.get("writing_score", 0)
+        reading = latest_rec.reading_score if latest_rec else (latest_pred.input_data.get("reading_score", None) if latest_pred else None)
+        writing = latest_rec.writing_score if latest_rec else (latest_pred.input_data.get("writing_score", None) if latest_pred else None)
         math_actual = latest_rec.math_score if latest_rec else None
         math_pred = latest_pred.predicted_math_score if latest_pred else None
-        effective_math = math_actual if math_actual is not None else (math_pred or 0)
+        effective_math = math_actual if math_actual is not None else math_pred
 
-        avg_score = round((effective_math + reading + writing) / 3.0, 2)
-        band = classify_support(avg_score)
-        bands[band] = bands.get(band, 0) + 1
+        has_scores = any(s is not None for s in (effective_math, reading, writing))
 
-        if avg_score < 60:
-            at_risk_students.append({
-                "id": student.id,
-                "student_id": student.student_id,
-                "name": student.name,
-                "class_name": student.class_name,
-                "section": student.section,
-                "math_score": math_actual,
-                "predicted_math_score": math_pred,
-                "reading_score": reading,
-                "writing_score": writing,
-                "average_score": avg_score,
-                "support_category": band,
-            })
+        if has_scores:
+            calc_m = effective_math if effective_math is not None else 0
+            calc_r = reading if reading is not None else 0
+            calc_w = writing if writing is not None else 0
+            avg_score = round((calc_m + calc_r + calc_w) / 3.0, 2)
+            band = classify_support(avg_score)
+            bands[band] = bands.get(band, 0) + 1
+        else:
+            avg_score = 0.0
+            band = "Unassessed"
+
+        # Upgrade recommendation analysis
+        if band == "Immediate Support Needed":
+            next_tier = "Needs Improvement"
+            target_score = 40.0
+            gap = round(max(0.0, 40.0 - avg_score), 1)
+            action = "1-on-1 Math coaching & remedial reading support"
+        elif band == "Needs Improvement":
+            next_tier = "Satisfactory"
+            target_score = 60.0
+            gap = round(max(0.0, 60.0 - avg_score), 1)
+            action = "Targeted practice worksheets & weekly mock quizzes"
+        elif band == "Satisfactory":
+            next_tier = "Strong Performance"
+            target_score = 80.0
+            gap = round(max(0.0, 80.0 - avg_score), 1)
+            action = "Advanced problem sets & project-based enrichment"
+        elif band == "Strong Performance":
+            next_tier = "Honors Tier"
+            target_score = 100.0
+            gap = round(max(0.0, 100.0 - avg_score), 1)
+            action = "Peer mentoring & competitive academic projects"
+        else:
+            next_tier = "Assessment Pending"
+            target_score = 60.0
+            gap = 0.0
+            action = "Upload assessment or run prediction"
+
+        student_entry = {
+            "id": student.id,
+            "student_id": student.student_id,
+            "name": student.name,
+            "email": student.email,
+            "class_name": student.class_name,
+            "section": student.section,
+            "gender": student.gender,
+            "race_ethnicity": student.race_ethnicity,
+            "math_score": math_actual,
+            "predicted_math_score": math_pred,
+            "reading_score": reading,
+            "writing_score": writing,
+            "average_score": avg_score,
+            "support_category": band,
+            "upgrade": {
+                "next_tier": next_tier,
+                "target_score": target_score,
+                "score_gap": gap,
+                "action": action,
+            },
+        }
+
+        all_students.append(student_entry)
+
+        if has_scores and avg_score < 60:
+            at_risk_students.append(student_entry)
+
+    # --- gender distribution ---
+    gender_qs = (
+        Student.objects.values("gender")
+        .annotate(count=Count("id"))
+    )
+    gender_distribution = {"male": 0, "female": 0, "other": 0}
+    for entry in gender_qs:
+        g = (entry["gender"] or "").strip().lower()
+        if g == "male":
+            gender_distribution["male"] += entry["count"]
+        elif g == "female":
+            gender_distribution["female"] += entry["count"]
+        else:
+            gender_distribution["other"] += entry["count"]
+
+    # --- class distribution ---
+    class_qs = (
+        Student.objects.values("class_name")
+        .annotate(count=Count("id"))
+    )
+    class_distribution = {entry["class_name"]: entry["count"] for entry in class_qs}
+
+    # --- total predictions ---
+    total_predictions = Prediction.objects.count()
 
     recent_activities = list(
         TeacherActivity.objects.order_by("-created_at")[:10].values(
@@ -553,5 +775,9 @@ def class_analytics(request):
         },
         "performance_bands": bands,
         "at_risk_students": at_risk_students,
+        "all_students": all_students,
+        "gender_distribution": gender_distribution,
+        "class_distribution": class_distribution,
+        "total_predictions": total_predictions,
         "recent_activities": recent_activities,
     })
